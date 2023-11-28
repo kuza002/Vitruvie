@@ -5,6 +5,8 @@ from telebot import types
 from telebot.types import ReplyKeyboardRemove
 from character import Character
 
+ENCODING = 'utf-8'
+
 BOT_TOKEN = "6811215765:AAGri2LdNJ2LTH1uyLcaRm_F1Z1HukHnATo"
 CHAT_ID = '-4028822764'
 
@@ -21,7 +23,7 @@ def open_character(message):
     character_name = message.text
     save_path = './characters/' + message.from_user.username + '.json'
 
-    with open(save_path, encoding='windows-1251') as save_file:
+    with open(save_path, encoding=ENCODING) as save_file:
         characters = json.load(save_file)
 
     character = [character for character in characters if character['name'] == character_name]
@@ -30,30 +32,38 @@ def open_character(message):
         bot.send_message(message.from_user.id, text='Нет такого персонажа')
         stop(message)
     else:
-        def char_menu(message, character):
-            if message.text == "Урон":
-                markup = types.ReplyKeyboardMarkup()
+        def ask_formula(message, character):
+            def change_stat(message, character, stat):
+                try:
+                    d = int(message.text)
+                except:
+                    print(message.text, stat)
+                    bot.send_message(message.from_user.id, 'Введите число')
+                    bot.register_next_step_handler(message, change_stat, character, stat)
 
-                for i in range(10):
-                    markup.add(types.KeyboardButton(str(i)))
+                character.js['resources'][stat] += d
+                character = Character(character.file_name, character.js).save()
 
-                bot.send_message(message.from_user.id, "Число урона", parse_mode='html', reply_markup=markup)
-                bot.register_next_step_handler(message, lambda mes: character.get_damage(int(mes.text)))
-                print()
+                bot.send_message(CHAT_ID, f'{character.name} изменил(а) свой показатель {stat}, на "{d}"')
 
+                char_menu(message, character.js)
 
+            bot.send_message(message.from_user.id, 'Как изменить показатель?', reply_markup=ReplyKeyboardRemove())
+            bot.register_next_step_handler(message, change_stat, character, message.text)
 
-        markup = types.ReplyKeyboardMarkup()
+        def char_menu(message, character_js):
+            markup = types.ReplyKeyboardMarkup()
+            markup.row(types.KeyboardButton('здоровье'))
+            markup.row(types.KeyboardButton('выносливость'))
+            markup.row(types.KeyboardButton('рассудок'))
+            markup.row(types.KeyboardButton('воля'))
 
-        markup.row(types.KeyboardButton('Урон'))
-        markup.row(types.KeyboardButton('Ресурс'))
-        markup.row(types.KeyboardButton('Домой'))
+            character = Character(message.from_user.username, character_js)
+            bot.send_message(message.from_user.id, character.to_sting(), parse_mode='html', reply_markup=markup)
 
-        character = Character(message.from_user.username, character[0])
-        bot.send_message(message.from_user.id, character.to_sting(), parse_mode='html', reply_markup=markup)
+            bot.register_next_step_handler(message, ask_formula, character)
 
-        bot.register_next_step_handler(message, char_menu, character)
-
+        char_menu(message, character[0])
 
 @bot.message_handler(commands=['character_list'])
 def character_list(message):
@@ -61,7 +71,7 @@ def character_list(message):
 
     if os.path.exists(save_path):
         markup = types.ReplyKeyboardMarkup()
-        with open(save_path, encoding='windows-1251') as save_file:
+        with open(save_path, encoding=ENCODING) as save_file:
             characters = json.load(save_file)
             for character in characters:
                 create_char_button = types.KeyboardButton(character['name'])
@@ -74,7 +84,8 @@ def character_list(message):
         create_char_button = types.KeyboardButton('Создать персонажа')
         markup.row(create_char_button)
 
-        ans = bot.send_message(message.from_user.id, "У Вас пока нет созданных персонажей, создать?", reply_markup=markup)
+        ans = bot.send_message(message.from_user.id, "У Вас пока нет созданных персонажей, создать?",
+                               reply_markup=markup)
 
         def check_ans(message):
             if message.text == 'Создать персонажа':
@@ -82,6 +93,7 @@ def character_list(message):
                 bot.register_next_step_handler(message, stop)
             else:
                 bot.register_next_step_handler(message, stop)
+
         bot.register_next_step_handler(ans, check_ans)
 
 
@@ -101,5 +113,6 @@ def start(message):
 @bot.message_handler(commands=['stop'])
 def stop(message):
     bot.send_message(message.from_user.id, "", reply_markup=ReplyKeyboardRemove())
+
 
 bot.infinity_polling()
