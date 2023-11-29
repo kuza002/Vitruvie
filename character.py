@@ -23,6 +23,10 @@ class Character:
 
             self.save()
 
+    @staticmethod
+    def by_name(username, person_name):
+        pass
+
     def add_to_stat(self, stat, value):
         def valid(value, maximum, minimum=0):
             value = min(value, maximum)
