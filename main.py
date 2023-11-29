@@ -1,5 +1,8 @@
 import os
 import json
+import random
+from datetime import datetime
+
 import telebot
 from telebot import types
 from telebot.types import ReplyKeyboardRemove
@@ -185,8 +188,9 @@ def show_skill(callback_query):
             number += 1
             if str(number) == data[1]:
                 bot.send_message(CHAT_ID, f'<b>{character_js['name']}</b>\n'
-                                          f'<i>Исспользует {skill_type[:-1].lower()+'й'} навык "{titel}"</i>\n{''.join(disc)}',
+                                          f'<i>Исспользует {skill_type[:-1].lower() + 'й'} навык "{titel}"</i>\n{''.join(disc)}',
                                  parse_mode='html')
+
 
 @bot.callback_query_handler(func=lambda c: c.data.split('_')[1] == 'skills')
 def get_skills(callback_query):
@@ -206,17 +210,70 @@ def get_skills(callback_query):
 
     markup = types.InlineKeyboardMarkup()
     buttons = []
-    for i in range(1, number+1):
-        buttons.append(types.InlineKeyboardButton(str(i), callback_data='skill_'+str(i)+'_'+character_name))
+    for i in range(1, number + 1):
+        buttons.append(types.InlineKeyboardButton(str(i), callback_data='skill_' + str(i) + '_' + character_name))
 
     markup.row(*buttons)
-    markup.add(types.InlineKeyboardButton("Назад", callback_data='name_'+character_name))
+    markup.add(types.InlineKeyboardButton("Назад", callback_data='name_' + character_name))
 
     bot.send_message(callback_query.from_user.id, text, parse_mode='html', reply_markup=markup)
 
+
+@bot.callback_query_handler(func=lambda c: c.data.split('_')[1] == 'roll' and len(c.data.split('_')) == 3)
+def roll_distributor(callback_query):
+    data = callback_query.data.split('_')
+
+    name = data[0]
+    param = data[2]
+
+    if not param.isdigit():
+        characters_js = get_list_of_characters(callback_query.from_user.username)
+        character_js = find_character_by_name(name, characters_js)
+
+        param = character_js['characteristics'][param]
+
+    param = int(param)
+
+    text = ''
+
+    for _ in range(param):
+        digit = random.randint(1, 6)
+        print(digit)
+        if digit == 6:
+            digit = "2️⃣"
+        elif digit == 3 or digit == 1:
+            digit = '1️⃣'
+        else:
+            digit = "0️⃣"
+
+        text += digit
+
+    bot.send_message(CHAT_ID, text)
+
+
 @bot.callback_query_handler(func=lambda c: c.data.split('_')[1] == 'roll')
-def roll():
-    pass
+def roll(callback_query):
+    characters_js = get_list_of_characters(callback_query.from_user.username)
+    character_js = find_character_by_name(callback_query.data.split('_')[0], characters_js)
+    character = Character(callback_query.from_user.username, character_js)
+
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton('Самочувствие', callback_data=character.name + '_roll_' + 'самочувствие'))
+    markup.add(types.InlineKeyboardButton('Движение', callback_data=character.name + '_roll_' + 'движение'))
+    markup.add(types.InlineKeyboardButton('Мышление', callback_data=character.name + '_roll_' + 'мышление'))
+    markup.add(types.InlineKeyboardButton('Общение', callback_data=character.name + '_roll_' + 'общение'))
+
+    digit_buttons = []
+    for i in range(1, 10):
+        digit_buttons.append(types.InlineKeyboardButton(str(i), callback_data=character.name + '_roll_' + str(i)))
+
+    markup.row(*digit_buttons[:3])
+    markup.row(*digit_buttons[3:6])
+    markup.row(*digit_buttons[6:])
+
+    markup.add(types.InlineKeyboardButton("Назад", callback_data='name_' + character.name))
+
+    bot.send_message(callback_query.from_user.id, character.to_sting(), reply_markup=markup, parse_mode='html')
 
 
 @bot.message_handler(commands=['stop'])
@@ -224,4 +281,5 @@ def stop(message):
     bot.send_message(message.from_user.id, "", reply_markup=ReplyKeyboardRemove())
 
 
+random.seed(datetime.now().timestamp())
 bot.infinity_polling()

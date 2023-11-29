@@ -2,10 +2,10 @@
   {
     "name": "Волк",
     "characteristics": {
-      "self-esteem": 3,
-      "movement": 4,
-      "thinking": 0,
-      "communication": 2
+      "самочувствие": 3,
+      "движение": 4,
+      "мышление": 0,
+      "общение": 2
     },
     "skills": {
       "Исключительные": {
