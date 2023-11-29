@@ -30,7 +30,7 @@ def open_character(message):
 
     if not character:
         bot.send_message(message.from_user.id, text='Нет такого персонажа')
-        stop(message)
+        character_list(message)
     else:
         def ask_formula(message, character):
             def change_stat(message, character, stat):
@@ -41,10 +41,9 @@ def open_character(message):
                     bot.send_message(message.from_user.id, 'Введите число')
                     bot.register_next_step_handler(message, change_stat, character, stat)
 
-                character.js['resources'][stat] += d
-                character = Character(character.file_name, character.js).save()
+                valid_d = character.add_to_stat(stat, d)
 
-                bot.send_message(CHAT_ID, f'{character.name} изменил(а) свой показатель {stat}, на "{d}"')
+                bot.send_message(CHAT_ID, f'{character.name} сделал(а) свой показатель {stat} равным "{valid_d}", добавив к нему {d}')
 
                 char_menu(message, character.js)
 
@@ -64,6 +63,7 @@ def open_character(message):
             bot.register_next_step_handler(message, ask_formula, character)
 
         char_menu(message, character[0])
+
 
 @bot.message_handler(commands=['character_list'])
 def character_list(message):

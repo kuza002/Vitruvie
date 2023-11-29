@@ -23,6 +23,35 @@ class Character:
 
             self.save()
 
+    def add_to_stat(self, stat, value):
+        def valid(value, maximum, minimum=0):
+            value = min(value, maximum)
+            return max(value, 0)
+
+        stat = stat.lower().strip()
+        if stat not in list(self.js['resources'].keys()):
+            return False
+
+        match stat:
+            case 'здоровье':
+                valid_value = valid(self.health + value, self.characteristics['self-esteem'] * 3)
+                self.health = valid_value
+
+            case 'выносливость':
+                valid_value = valid(self.endurance+value, self.characteristics['movement']*3)
+                self.endurance = valid_value
+
+            case "рассудок":
+                valid_value = valid(self.mind + value, self.characteristics['thinking'] * 3)
+                self.mind = valid_value
+
+            case 'воля':
+                valid_value = valid(self.will + value, self.characteristics['communication'] * 3)
+                self.will = valid_value
+
+        self.save()
+        return valid_value
+
     def save(self):
         file_path = "./characters/"+self.file_name+".json"
         with open(file_path, 'r', encoding=ENCODING) as file:
@@ -34,9 +63,12 @@ class Character:
                                               'выносливость': self.endurance,
                                               'рассудок': self.mind,
                                               'воля': self.will}
+                    self.js = character
+                    break
 
         with open(file_path, 'w', encoding=ENCODING) as file:
             json.dump(js, file, ensure_ascii=False)
+
 
         return self
 
@@ -44,10 +76,10 @@ class Character:
         text = f"""
         <b>{self.name}</b>
     
-        <i>Здоровье: </i> [{("🔴" * self.health) if self.health != 0 else "❌"}]
-        <i>Выносливость: </i> [{("🟢" * self.endurance) if self.endurance != 0 else "❌"}]
-        <i>Рассудок: </i> [{("🔵" * self.mind) if self.mind != 0 else "❌"}]
-        <i>Воля: </i> [{("🟠" * self.will) if self.will != 0 else "❌"}]
+        <i>Здоровье({self.health}/{self.characteristics['self-esteem']*3}): </i> [{("🔴" * self.health) if self.health != 0 else "❌"}]
+        <i>Выносливость({self.endurance}/{self.characteristics['movement']*3}): </i> [{("🟢" * self.endurance) if self.endurance != 0 else "❌"}]
+        <i>Рассудок({self.mind}/{self.characteristics['thinking']*3}): </i> [{("🔵" * self.mind) if self.mind != 0 else "❌"}]
+        <i>Воля({self.will}/{self.characteristics['communication']*3}): </i> [{("🟠" * self.will) if self.will != 0 else "❌"}]
         
         <pre>
         |   Навык      | Знач. |
