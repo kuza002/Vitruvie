@@ -16,9 +16,9 @@ CHAT_ID = '-4028822764'
 bot = telebot.TeleBot(BOT_TOKEN)
 
 
-@bot.message_handler(commands=['create_character'])
-def create_character(message):
-    bot.send_message(message.from_user.id, "А жаренных гвоздей не хочешь?")
+# def log(data, path=".logs/rolls.csv"):
+#     with open(path, 'w') as file:
+
 
 
 def char_menu(user, character_name):
@@ -204,8 +204,8 @@ def get_skills(callback_query):
         text += f'<b>{skill_type}</b>\n'
         for title, disc in skills.items():
             number += 1
-            text += f'{number}.{title}'
-            text += f'\n\t<i>{''.join(disc)}</i>\n'
+            text += f'<i><b>{number}.{title}</b></i>'
+            text += f'\n\t{''.join(disc)}\n'
         text += '\n\n'
 
     markup = types.InlineKeyboardMarkup()
@@ -226,19 +226,23 @@ def roll_distributor(callback_query):
     name = data[0]
     param = data[2]
 
+    text = f'<b>{name}</b>\n'
+
     if not param.isdigit():
         characters_js = get_list_of_characters(callback_query.from_user.username)
         character_js = find_character_by_name(name, characters_js)
 
+        text += f'Проверка навыка <i>{param}</i>: \n'
         param = character_js['characteristics'][param]
+
+    else:
+        text += f'Бросок <i>{param}</i> кубов: \n'
 
     param = int(param)
 
-    text = ''
-
     for _ in range(param):
         digit = random.randint(1, 6)
-        print(digit)
+
         if digit == 6:
             digit = "2️⃣"
         elif digit == 3 or digit == 1:
@@ -248,7 +252,7 @@ def roll_distributor(callback_query):
 
         text += digit
 
-    bot.send_message(CHAT_ID, text)
+    bot.send_message(CHAT_ID, text, parse_mode='html')
 
 
 @bot.callback_query_handler(func=lambda c: c.data.split('_')[1] == 'roll')
