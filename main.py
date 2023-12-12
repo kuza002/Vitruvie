@@ -11,14 +11,13 @@ from character import Character
 ENCODING = 'utf-8'
 
 BOT_TOKEN = "6811215765:AAGri2LdNJ2LTH1uyLcaRm_F1Z1HukHnATo"
-CHAT_ID = '-4028822764'
+CHAT_ID = '-4030377008'
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
 
 # def log(data, path=".logs/rolls.csv"):
 #     with open(path, 'w') as file:
-
 
 
 def char_menu(user, character_name):
@@ -37,7 +36,7 @@ def char_menu(user, character_name):
     markup.add(types.InlineKeyboardButton('Главное меню', callback_data='go_home'))
 
     characters_js = get_list_of_characters(user.username)
-    character_js = find_character_by_name(character_name, characters_js)
+    character_js = get_character_by_name(character_name, characters_js)
 
     character = Character(user.username, character_js)
     bot.send_message(user.id, character.to_sting(), parse_mode='html', reply_markup=markup)
@@ -53,7 +52,7 @@ def get_list_of_characters(username):
         return []
 
 
-def find_character_by_name(name, characters_js):
+def get_character_by_name(name, characters_js):
     for character_js in characters_js:
         if character_js['name'] == name:
             return character_js
@@ -109,16 +108,50 @@ def change_stat(message, character, stat):
     char_menu(message.from_user, character.name)
 
 
+def delete_character(message, characters_js):
+    name_to_del = message.text.strip().lower()
+    for character_js in characters_js:
+        if character_js['name'].lower() == name_to_del:
+            characters_js.remove(character_js)
+
+            with open(f'characters/{message.from_user.username}.json', 'w', encoding=ENCODING) as file:
+                json.dump(characters_js, file, ensure_ascii=False)
+
+            bot.send_message(message.from_user.id, f'{character_js['name']} был успешно удалён')
+            main_menu(message)
+            return
+
+    bot.send_message(message.from_user.id, f'Персонажа с именем {character_js['name']} не существует')
+    main_menu(message)
+
+
+def get_char_to_del(callback):
+    characters_js = get_list_of_characters(callback.from_user.username)
+    characters_names = [character['name'] for character in characters_js]
+
+    text = '\n'.join(characters_names)
+
+    bot.send_message(callback.from_user.id, "Введите имя персонажа, которого хотите удалить\n" + text)
+    bot.register_next_step_handler(callback.message
+                                   if type(callback) == telebot.types.CallbackQuery
+                                   else callback,
+                                   delete_character, characters_js)
+
+
 @bot.callback_query_handler(func=lambda c: c.data[-10:] == '_character' or c.data == 'go_home')
 def main_menu_distributor(callback_data):
     action = callback_data.data[:-10]
 
     if action == 'open':
         character_list(callback_data.from_user.username, callback_data.from_user.id)
+    elif action == 'create':
+        creat_character_tempalte(callback_data)
+    elif action == 'delete':
+        get_char_to_del(callback_data)
     elif callback_data.data == 'go_home':
         main_menu(callback_data)
     else:
-        bot.send_message(callback_data.from_user.username, 'Данный функционал не реализован')
+        bot.send_message(callback_data.from_user.id, 'Данный функционал не реализован')
         main_menu(callback_data)
 
 
@@ -141,7 +174,7 @@ def open_character(callback):
     character_name = callback.data[5:]
 
     characters_js = get_list_of_characters(callback.from_user.username)
-    character_js = find_character_by_name(character_name, characters_js)
+    character_js = get_character_by_name(character_name, characters_js)
 
     if characters_js:
         char_menu(callback.from_user, character_js['name'])
@@ -155,7 +188,7 @@ def ask_formula(callback_query):
     data = callback_query.data.split('_')
 
     characters_js = get_list_of_characters(callback_query.from_user.username)
-    character_js = find_character_by_name(data[2], characters_js)
+    character_js = get_character_by_name(data[2], characters_js)
 
     character = Character(callback_query.from_user.username, character_js)
 
@@ -167,7 +200,7 @@ def ask_formula(callback_query):
 def rest_all(callback_query):
     character_name = callback_query.data.split('_')[0]
     characters_js = get_list_of_characters(callback_query.from_user.username)
-    character_js = find_character_by_name(character_name, characters_js)
+    character_js = get_character_by_name(character_name, characters_js)
 
     bot.send_message(CHAT_ID, f'{character_name} отдохнул(а) и восстановил все рессурсы')
 
@@ -180,7 +213,7 @@ def rest_all(callback_query):
 def show_skill(callback_query):
     data = callback_query.data.split('_')
     characters_js = get_list_of_characters(callback_query.from_user.username)
-    character_js = find_character_by_name(data[2], characters_js)
+    character_js = get_character_by_name(data[2], characters_js)
 
     number = 0
     for skill_type, skills in character_js['skills'].items():
@@ -196,7 +229,7 @@ def show_skill(callback_query):
 def get_skills(callback_query):
     character_name = callback_query.data.split('_')[0]
     characters_js = get_list_of_characters(callback_query.from_user.username)
-    character_js = find_character_by_name(character_name, characters_js)
+    character_js = get_character_by_name(character_name, characters_js)
 
     text = ''
     number = 0
@@ -230,7 +263,7 @@ def roll_distributor(callback_query):
 
     if not param.isdigit():
         characters_js = get_list_of_characters(callback_query.from_user.username)
-        character_js = find_character_by_name(name, characters_js)
+        character_js = get_character_by_name(name, characters_js)
 
         text += f'Проверка навыка <i>{param}</i>: \n'
         param = character_js['characteristics'][param]
@@ -258,7 +291,7 @@ def roll_distributor(callback_query):
 @bot.callback_query_handler(func=lambda c: c.data.split('_')[1] == 'roll')
 def roll(callback_query):
     characters_js = get_list_of_characters(callback_query.from_user.username)
-    character_js = find_character_by_name(callback_query.data.split('_')[0], characters_js)
+    character_js = get_character_by_name(callback_query.data.split('_')[0], characters_js)
     character = Character(callback_query.from_user.username, character_js)
 
     markup = types.InlineKeyboardMarkup()
@@ -278,6 +311,62 @@ def roll(callback_query):
     markup.add(types.InlineKeyboardButton("Назад", callback_data='name_' + character.name))
 
     bot.send_message(callback_query.from_user.id, character.to_sting(), reply_markup=markup, parse_mode='html')
+
+
+def create_character(message):
+    text = message.text
+    text_list = text.split('\n')
+    js = {'name': text_list[0].replace('Имя: ', ''),
+          'characteristics': {row.split(": ")[0].lower(): row.split(": ")[1] for row in text_list[1:5]},
+          'skills': {"обычные": {}, 'превосходные': {}, 'исключительные': {}, 'легендарные': {}}}
+
+    # try:
+    type = None
+    for row in text_list[6:]:
+        if row.strip().lower() in ['обычные:', 'превосходные:', 'исключительные:', "легендарные:"]:
+            type = row.strip().lower()[:-1]
+            continue
+        title, disc = tuple(row.split(': '))
+        if type is None:
+            bot.send_message(message.from_user.id, 'Неправильно введённые данные')
+            creat_character_tempalte(message)
+        js['skills'][type][title.strip()] = disc.strip()
+
+    # except:
+    #     bot.send_message(message.from_user.id, 'Неправильно введённые данные')
+    #     creat_character_tempalte(message)
+
+    character = Character(message.from_user.username, js)
+    character.save()
+    bot.send_message(message.from_user.id, 'Персонаж успешно создан')
+    main_menu(message)
+
+
+def creat_character_tempalte(callback):
+    bot.send_message(callback.from_user.id, 'Укажите данные своего персонажа в следующем формате:\n'
+                                            'Имя: Алекс\n'
+                                            'Самочувствие: 2\n'
+                                            'Движение: 2\n'
+                                            'Мышление: 2\n'
+                                            'Общение: 2\n'
+                                            'Навыки:\n'
+                                            'Обычные:\n'
+                                            'навык 1: Описание навыка 1\n'
+                                            'навык 2: Описание навыка 2\n'
+                                            'Превосходные:\n'
+                                            'навык 1: Описание навыка 1\n'
+                                            'навык 2: Описание навыка 2\n'
+                                            'Исключительные:\n'
+                                            'навык 1: Описание навыка 1\n'
+                                            'навык 2: Описание навыка 2\n'
+                                            'Легендарные:\n'
+                                            'навык 1: Описание навыка 1\n'
+                                            'навык 2: Описание навыка 2\n')
+
+    bot.register_next_step_handler(callback.message if
+                                   type(callback) == telebot.types.CallbackQuery
+                                   else callback,
+                                   create_character)
 
 
 @bot.message_handler(commands=['stop'])

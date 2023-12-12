@@ -17,10 +17,10 @@ class Character:
             self.mind = js['resources']['рассудок']
             self.will = js['resources']['воля']
         else:
-            self.health = self.characteristics['самочувствие'] * 3
-            self.endurance = self.characteristics['движение'] * 3
-            self.mind = self.characteristics['мышление'] * 3
-            self.will = self.characteristics['общение'] * 3
+            self.health = int(self.characteristics['самочувствие']) * 3
+            self.endurance = int(self.characteristics['движение']) * 3
+            self.mind = int(self.characteristics['мышление']) * 3
+            self.will = int(self.characteristics['общение']) * 3
 
             self.save()
 
@@ -39,19 +39,19 @@ class Character:
 
         match stat:
             case 'здоровье':
-                valid_value = valid(self.health + value, self.characteristics['самочувствие'] * 3)
+                valid_value = valid(self.health + value, int(self.characteristics['самочувствие']) * 3)
                 self.health = valid_value
 
             case 'выносливость':
-                valid_value = valid(self.endurance + value, self.characteristics['движение'] * 3)
+                valid_value = valid(self.endurance + value, int(self.characteristics['движение']) * 3)
                 self.endurance = valid_value
 
             case "рассудок":
-                valid_value = valid(self.mind + value, self.characteristics['мышление'] * 3)
+                valid_value = valid(self.mind + value, int(self.characteristics['мышление']) * 3)
                 self.mind = valid_value
 
             case 'воля':
-                valid_value = valid(self.will + value, self.characteristics['общение'] * 3)
+                valid_value = valid(self.will + value, int(self.characteristics['общение']) * 3)
                 self.will = valid_value
 
         self.save()
@@ -70,6 +70,8 @@ class Character:
                                               'воля': self.will}
                     self.js = character
                     break
+            else:
+                js.append(self.js)
 
         with open(file_path, 'w', encoding=ENCODING) as file:
             json.dump(js, file, ensure_ascii=False)
@@ -80,10 +82,10 @@ class Character:
         text = f"""
         <b>{self.name}</b>
     
-        <i>Здоровье({self.health}/{self.characteristics['самочувствие'] * 3}): </i> [{("🔴" * self.health) if self.health != 0 else "❌"}]
-        <i>Выносливость({self.endurance}/{self.characteristics['движение'] * 3}): </i> [{("🟢" * self.endurance) if self.endurance != 0 else "❌"}]
-        <i>Рассудок({self.mind}/{self.characteristics['мышление'] * 3}): </i> [{("🔵" * self.mind) if self.mind != 0 else "❌"}]
-        <i>Воля({self.will}/{self.characteristics['общение'] * 3}): </i> [{("🟠" * self.will) if self.will != 0 else "❌"}]
+        <i>Здоровье({self.health}/{int(self.characteristics['самочувствие']) * 3}): </i> [{("🔴" * self.health) if self.health != 0 else "❌"}]
+        <i>Выносливость({self.endurance}/{int(self.characteristics['движение']) * 3}): </i> [{("🟢" * self.endurance) if self.endurance != 0 else "❌"}]
+        <i>Рассудок({self.mind}/{int(self.characteristics['мышление']) * 3}): </i> [{("🔵" * self.mind) if self.mind != 0 else "❌"}]
+        <i>Воля({self.will}/{int(self.characteristics['общение']) * 3}): </i> [{("🟠" * self.will) if self.will != 0 else "❌"}]
         
         <pre>
         |   Навык      | Знач. |
