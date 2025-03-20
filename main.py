@@ -10,8 +10,8 @@ from character import Character
 
 ENCODING = 'utf-8'
 
-BOT_TOKEN = "6811215765:AAGri2LdNJ2LTH1uyLcaRm_F1Z1HukHnATo"
-CHAT_ID = '-4030377008'
+BOT_TOKEN = ""
+CHAT_ID = ''
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
